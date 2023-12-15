@@ -2,6 +2,8 @@
 set -euo pipefail
 
 DOCKER_CONTAINER_NAME="samplerunning"
+SERVER_ADDRESS="172.17.0.3"
+SERVER_PORT="5050"
 
 if docker ps -a --format '{{.Names}}' | grep -q "^${DOCKER_CONTAINER_NAME}\$"; then
     docker rm -f "${DOCKER_CONTAINER_NAME}"
@@ -29,3 +31,14 @@ cd tempdir || exit
 docker build -t sampleapp .
 docker run -t -d -p 5050:5050 --name "${DOCKER_CONTAINER_NAME}" sampleapp
 docker ps -a
+
+echo "Running acceptance test..."
+RESPONSE=$(curl -s "http://${SERVER_ADDRESS}:${SERVER_PORT}/")
+echo "Server Response: $RESPONSE"
+
+if echo "$RESPONSE" | grep -q "You are calling me from 172.17.0.2:8080"; then
+    echo "Test Passed: Expected response found."
+else
+    echo "Test Failed: Expected response not found."
+    exit 1  
+fi
